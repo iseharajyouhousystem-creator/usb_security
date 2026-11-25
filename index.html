@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="USB貸出">
+<meta name="theme-color" content="#0031d8">
+<title>USB貸出管理</title>
+<style>
+:root{--bg:#f3f5f9;--card:#fff;--ink:#1b1d21;--muted:#5d6570;--line:#d7dce4;--pri:#0031d8;--pri-soft:#e9effe;--ok:#1d7a3a;--ok-soft:#e5f4ea;--warn:#9a5200;--warn-soft:#fff3df;--bad:#c1121f;--bad-soft:#fde9ea;--stamp:#d01c1c}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;font-size:17px;line-height:1.6;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+header{background:var(--pri);color:#fff;display:flex;align-items:center;gap:12px;padding:12px 20px;padding-top:max(12px,env(safe-area-inset-top))}
+header h1{font-size:19px;margin:0;font-weight:700}
+header .proto{background:#fff;color:var(--pri);font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;white-space:nowrap}
+header .date{margin-left:auto;font-size:15px;opacity:.9;white-space:nowrap}
+nav{position:sticky;top:0;z-index:10;display:flex;gap:4px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px}
+nav button{flex:0 0 auto;border:0;background:none;font:inherit;font-size:16px;color:var(--muted);padding:8px 14px;min-height:44px;border-radius:10px;cursor:pointer}
+nav button.on{background:var(--pri-soft);color:var(--pri);font-weight:700}
+.cnt{display:inline-block;min-width:22px;height:22px;line-height:22px;padding:0 6px;margin-left:6px;border-radius:99px;background:var(--warn);color:#fff;font-size:13px;font-weight:700;text-align:center}
+.cnt.bad{background:var(--bad)}
+main{max-width:1120px;margin:0 auto;padding:20px 16px 96px}
+h2{font-size:22px;margin:8px 0 12px}
+h3{font-size:19px;margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h4{font-size:16px;margin:20px 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.empty{color:var(--muted);text-align:center;padding:32px}
+.row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:24px 0 12px}
+.row-head h2{margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:16px;min-height:44px;padding:8px 18px;border-radius:10px;border:1px solid #b9c0cb;background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;font-weight:600}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:700}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+.btn.danger-o{color:var(--bad);border-color:var(--bad)}
+.btn.big{min-height:52px;padding:10px 28px;font-size:17px}
+.btn.small{min-height:36px;padding:4px 12px;font-size:14px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.stat .n{font-size:32px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .l{font-size:14px;color:var(--muted)}
+.stat.warn{background:var(--warn-soft);border-color:#f0c98a}.stat.warn .n{color:var(--warn)}
+.stat.bad{background:var(--bad-soft);border-color:#f2b3b7}.stat.bad .n{color:var(--bad)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:112px;padding:14px;border-radius:14px;border:2px solid var(--line);background:#fff;font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.tile b{font-size:20px}
+.tile .st{font-weight:700;font-size:15px}
+.tile .sub{font-size:13px;color:var(--muted)}
+.tile.free{border-style:dashed}.tile.free .st{color:var(--ok)}
+.tile.out{border-color:var(--pri);background:var(--pri-soft)}.tile.out .st{color:var(--pri)}
+.tile.pend{border-color:#e3a44a;background:var(--warn-soft)}.tile.pend .st{color:var(--warn)}
+.tile.over{border-color:var(--bad);background:var(--bad-soft)}.tile.over .st{color:var(--bad)}
+.notice{border-radius:12px;padding:12px 16px;margin:0 0 16px;font-size:15px}
+.notice.warn{background:var(--warn-soft);color:#6b3a00}
+.notice.bad{background:var(--bad-soft);color:#7d0d14}
+.notice.info{background:var(--pri-soft);color:#10267a}
+.notice .btn{margin-top:8px}
+.tag{display:inline-block;font-size:13px;font-weight:700;padding:1px 10px;border-radius:99px;background:#eceff3;color:var(--muted);white-space:nowrap}
+.tag.pend{background:var(--warn-soft);color:var(--warn)}
+.tag.lent{background:var(--pri-soft);color:var(--pri)}
+.tag.over{background:var(--bad-soft);color:var(--bad)}
+.tag.ret{background:var(--ok-soft);color:var(--ok)}
+.tag.pii{background:var(--bad);color:#fff}
+.rec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.rec-head .no{font-weight:700;color:var(--muted)}
+.rec-head .media{margin-left:auto;font-size:20px;font-weight:700}
+dl.sum{display:grid;grid-template-columns:max-content 1fr max-content 1fr;gap:6px 16px;margin:0}
+dl.sum dt{color:var(--muted);font-size:14px;padding-top:2px}
+dl.sum dd{margin:0;font-weight:600;word-break:break-word}
+.form label,.form fieldset{display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:600;margin:0 0 16px}
+.form fieldset{border:0;padding:0;min-width:0}
+.form legend{padding:0;margin-bottom:6px}
+input,select,textarea{font:inherit;font-size:17px;padding:10px 12px;border:1px solid #b9c0cb;border-radius:10px;background:#fff;color:var(--ink);min-height:48px;width:100%;font-weight:400}
+textarea{min-height:auto;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:3px solid #9db4ff;outline-offset:0;border-color:var(--pri)}
+input[type=checkbox],input[type=radio]{width:22px;height:22px;min-height:0;flex:0 0 auto;accent-color:var(--pri);margin:0}
+.req{display:inline-block;margin-left:8px;font-size:12px;color:#fff;background:var(--bad);border-radius:4px;padding:0 6px;font-weight:700;vertical-align:middle}
+.lbl{display:block}
+small{color:var(--muted);font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px}
+.seg{display:flex;gap:10px}
+.seg label{flex:1;flex-direction:row;align-items:center;justify-content:center;gap:10px;border:1px solid #b9c0cb;border-radius:10px;min-height:52px;margin:0;font-size:18px;cursor:pointer}
+.seg label.on{border-color:var(--pri);background:var(--pri-soft);color:var(--pri)}
+.chk{flex-direction:row!important;align-items:center;gap:10px!important;cursor:pointer}
+.err{color:var(--bad);font-weight:600;font-size:15px;margin:8px 0 0}
+.err:empty{display:none}
+.err-box{background:var(--bad-soft);color:#7d0d14;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:15px}
+.err-box ul{margin:4px 0 0;padding-left:20px}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th,.tbl td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:middle}
+.tbl th{background:#f0f2f6;font-weight:700;white-space:nowrap;text-align:center}
+.tbl tbody th{text-align:left}
+.tbl tbody tr[data-act]{cursor:pointer}
+.tbl tbody tr[data-act]:hover,.tbl tbody tr[data-act]:active{background:var(--pri-soft)}
+.tbl tr.dim td{color:var(--muted)}
+.ledger td{white-space:nowrap}
+.ledger td.wrap{white-space:normal;min-width:150px}
+.nowrap{white-space:nowrap}
+.nowrap .btn{margin:2px}
+.stamp{display:inline-block;color:var(--stamp);border:1.5px solid var(--stamp);border-radius:999px;padding:0 8px;font-size:13px;font-weight:700;line-height:1.5;white-space:nowrap}
+.muted{color:var(--muted)}
+.unsigned{color:var(--warn);font-weight:700;font-size:13px}
+.filters{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+.ledger-actions{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:12px;flex-wrap:wrap}
+.ledger-actions #ledgerCount{font-weight:700}
+.final-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.pinbox{background:#f6f8fc;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:16px}
+.pin-title{font-weight:700;margin-bottom:4px}
+.pinbox label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600;margin-top:8px}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+#modal-root .overlay{position:fixed;inset:0;background:rgba(15,20,35,.5);display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;z-index:100}
+.modal{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:720px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto 0}
+.modal>label{display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600;margin-top:16px}
+.hist{margin:0;padding-left:20px;font-size:14px}
+.hist time{color:var(--muted);margin-right:6px}
+ul.mini{font-size:14px;max-height:220px;overflow:auto;padding-left:20px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#1b1d21;color:#fff;padding:12px 20px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:200;max-width:90vw}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.danger-zone{border-color:#f2b3b7}
+.center{text-align:center}
+@media (max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr}dl.sum{grid-template-columns:max-content 1fr}}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}header h1{font-size:17px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>USB貸出管理（記録媒体等受払簿）</h1>
+  <span class="proto">試作版</span>
+  <span class="date" id="today"></span>
+</header>
+<nav id="nav" aria-label="メニュー"></nav>
+<main id="view"></main>
+<div id="modal-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   USB貸出管理（試作版）
+   - データはこの端末のブラウザ内（localStorage）にのみ保存
+   - 一次承認：デジタル・行政経営課 担当者（PIN）
+   - 最終承認：課長（PIN、事後一括承認可）
+   ========================================================= */
+
+/* ---------- SHA-256（PINをそのまま保存しないため） ---------- */
+function sha256(str){
+  let ascii=unescape(encodeURIComponent(str));
+  const rr=(v,a)=>(v>>>a)|(v<<(32-a));
+  const maxWord=Math.pow(2,32);
+  let i,j,result='';
+  const words=[],bitLen=ascii.length*8;
+  let hash=[],k=[];let pc=0;const isC={};
+  for(let c=2;pc<64;c++){if(!isC[c]){for(i=0;i<313;i+=c)isC[i]=c;hash[pc]=(Math.pow(c,.5)*maxWord)|0;k[pc++]=(Math.pow(c,1/3)*maxWord)|0;}}
+  hash=hash.slice(0,8);
+  ascii+='\x80';
+  while(ascii.length%64-56)ascii+='\x00';
+  for(i=0;i<ascii.length;i++){j=ascii.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8;}
+  words[words.length]=((bitLen/maxWord)|0);
+  words[words.length]=bitLen;
+  for(j=0;j<words.length;){
+    const w=words.slice(j,j+=16);const old=hash;hash=hash.slice(0,8);
+    for(i=0;i<64;i++){
+      const w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];
+      const t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]
+        +(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      const t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0;
+    }
+    for(i=0;i<8;i++)hash[i]=(hash[i]+old[i])|0;
+  }
+  for(i=0;i<8;i++)for(j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;result+=((b<16)?'0':'')+b.toString(16);}
+  return result;
+}
+const hashPin=(salt,pin)=>sha256(salt+':'+pin);
+
+/* ---------- 共通 ---------- */
+const STORE_KEY='usbLendingLedger.v1';
+const ROLE={first:'一次承認者（担当者）',final:'最終承認者（課長）'};
+const STATUS={pending:'一次承認待ち',lent:'貸出中',returned:'返却済',rejected:'却下'};
+const TABS=[['home','ホーム'],['apply','新規申請'],['approve','一次承認'],['return','返却'],['ledger','台帳・CSV'],['final','課長承認'],['settings','設定']];
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymdOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>ymdOf(new Date());
+const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return ymdOf(d);};
+const nowISO=()=>new Date().toISOString();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function wa(s){if(!s)return '';const [y,m,d]=s.split('-').map(Number);return y>=2019?`R${y-2018}.${m}.${d}`:`${y}.${m}.${d}`;}
+function fmtDT(iso){if(!iso)return '';const d=new Date(iso);return `${wa(ymdOf(d))} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function csvDT(iso){if(!iso)return '';const d=new Date(iso);return `${ymdOf(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+const stamp8=()=>today().replace(/-/g,'');
+const no=r=>'No.'+String(r.no).padStart(4,'0');
+
+/* ---------- データ ---------- */
+function makeApprover(name,role,isAdmin,pin,demo){
+  const salt=uid();
+  const a={id:uid(),name,role,isAdmin:!!isAdmin,active:true,salt,pinHash:hashPin(salt,pin)};
+  if(demo)a.demoPin=pin;
+  return a;
+}
+function newRecord(db,f){
+  db.seq=(db.seq||0)+1;
+  return {id:uid(),no:db.seq,createdAt:nowISO(),status:'pending',
+    dept:f.dept,receiver:f.receiver,lendDate:f.lendDate,media:f.media,qty:f.qty,content:f.content,
+    pii:f.pii,piiFile:f.piiFile||'',from:f.from,to:f.to,dueDate:f.dueDate,note:f.note||'',
+    lend1:null,lendFinal:null,returnDate:'',ret1:null,retFinal:null,rejectReason:'',rej:null,
+    history:[{at:nowISO(),action:'申請',by:f.receiver}]};
+}
+function defaultDB(){
+  const db={version:1,seq:0,records:[],approvers:[],
+    masters:{
+      depts:['保年','長介','市民税','戸住','障福','FJJ'],
+      media:['USB1','USB2','USB3','USB4','USB5','USB6','USB7','USB8','USB9','USB10'],
+      systems:['HJ','国保連','IG','MCWEL','FJJ','入管','窓口端末']},
+    meta:{createdAt:nowISO(),lastBackupAt:null,demo:true}};
+  db.approvers.push(makeApprover('担当者A','first',true,'1111',true));
+  db.approvers.push(makeApprover('担当者B','first',false,'2222',true));
+  db.approvers.push(makeApprover('課長','final',true,'9999',true));
+  seedSamples(db);
+  return db;
+}
+function seedSamples(db){
+  const t=today(),A='担当者A',B='担当者B',K='課長';
+  const at=(d,h)=>new Date(d+'T'+h+':00').toISOString();
+  const mk=(f,st)=>{
+    const r=newRecord(db,Object.assign({qty:1},f));
+    r.createdAt=at(f.lendDate,'09:00');r.history[0].at=r.createdAt;
+    if(st.l1){r.status='lent';r.lend1={by:st.l1,at:at(f.lendDate,'09:05')};r.history.push({at:r.lend1.at,action:'一次承認（貸出）',by:st.l1});}
+    if(st.ret){r.status='returned';r.returnDate=st.ret;r.ret1={by:st.l1,at:at(st.ret,'16:00')};r.history.push({at:r.ret1.at,action:'返却確認',by:st.l1});}
+    if(st.fin){const fa=at(st.ret||f.lendDate,'17:30');r.lendFinal={by:K,at:fa};r.history.push({at:fa,action:'最終承認（貸出）',by:K});
+      if(st.ret){r.retFinal={by:K,at:fa};r.history.push({at:fa,action:'最終承認（返却）',by:K});}}
+    db.records.push(r);
+  };
+  mk({dept:'保年',receiver:'受領者A',lendDate:addDays(t,-6),dueDate:addDays(t,-6),media:'USB6',content:'国保資格データ',pii:'有',piiFile:'国保資格異動ファイル',from:'HJ',to:'国保連'},{l1:A,ret:addDays(t,-6),fin:true});
+  mk({dept:'長介',receiver:'受領者B',lendDate:addDays(t,-5),dueDate:addDays(t,-5),media:'USB10',content:'給付データ',pii:'無',from:'国保連',to:'IG'},{l1:B,ret:addDays(t,-5)});
+  mk({dept:'市民税',receiver:'受領者C',lendDate:addDays(t,-1),dueDate:addDays(t,-1),media:'USB1',content:'公示文',pii:'無',from:'IG',to:'窓口端末'},{l1:A,ret:addDays(t,-1)});
+  mk({dept:'障福',receiver:'受領者D',lendDate:addDays(t,-2),dueDate:addDays(t,-1),media:'USB9',content:'自立支援データ',pii:'有',piiFile:'自立支援受給者ファイル',from:'MCWEL',to:'国保連'},{l1:B});
+  mk({dept:'戸住',receiver:'受領者E',lendDate:t,dueDate:t,media:'USB7',content:'入管庁通知',pii:'無',from:'入管',to:'HJ'},{l1:A});
+  mk({dept:'保年',receiver:'受領者F',lendDate:t,dueDate:t,media:'USB8',content:'国保資格データ',pii:'有',piiFile:'国保資格異動ファイル',from:'HJ',to:'国保連'},{});
+}
+function load(){
+  try{const s=localStorage.getItem(STORE_KEY);if(s){const d=JSON.parse(s);if(d&&Array.isArray(d.records))return d;}}catch(e){}
+  return defaultDB();
+}
+function save(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(DB));return true;}
+  catch(e){alert('データを保存できませんでした。ブラウザの設定（プライベートブラウズ等）を確認してください。');return false;}
+}
+function testStorage(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true;}catch(e){return false;}}
+
+let DB=load();
+const storageOK=testStorage();
+const state={tab:'home',admin:false,preMedia:null,lf:{from:'',to:'',dept:'',status:'',q:''}};
+let modalCtx=null,pinFail=0,lockUntil=0;
+
+const byId=id=>DB.records.find(r=>r.id===id);
+const isOverdue=r=>r.status==='lent'&&r.dueDate<today();
+const isNeedFinal=r=>(r.status==='lent'||r.status==='returned')&&(!r.lendFinal||(r.status==='returned'&&!r.retFinal));
+function finalTargets(r){const t=[];if(!r.lendFinal)t.push('貸出');if(r.status==='returned'&&!r.retFinal)t.push('返却');return t;}
+const statusText=r=>isOverdue(r)?'貸出中（期限超過）':(STATUS[r.status]||r.status);
+function statusTag(r){const c=r.status==='pending'?'pend':isOverdue(r)?'over':r.status==='lent'?'lent':r.status==='returned'?'ret':'';return `<span class="tag ${c}">${statusText(r)}</span>`;}
+function lateText(r){if(isOverdue(r))return '超過中';if(r.status==='returned'&&r.returnDate>r.dueDate)return '遅延返却';return '';}
+function busyMap(){const m={};DB.records.forEach(r=>{if(r.status==='pending'||r.status==='lent')m[r.media]=r;});return m;}
+function log(r,action,by){r.history.push({at:nowISO(),action,by});}
+
+/* ---------- 画面共通部品 ---------- */
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2800);}
+function openModal(html,ctx){
+  modalCtx=ctx||{};
+  $('#modal-root').innerHTML=`<div class="overlay"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+}
+function closeModal(){modalCtx=null;$('#modal-root').innerHTML='';}
+function piiHTML(r){return r.pii==='有'?`<span class="tag pii">有</span> ${esc(r.piiFile)}`:'無';}
+function recSummary(r){
+  return `<dl class="sum">
+  <dt>業務主管課</dt><dd>${esc(r.dept)}</dd>
+  <dt>受領者</dt><dd>${esc(r.receiver)}</dd>
+  <dt>媒体・数量</dt><dd>${esc(r.media)} × ${r.qty}</dd>
+  <dt>特定個人情報</dt><dd>${piiHTML(r)}</dd>
+  <dt>記録内容</dt><dd>${esc(r.content)}</dd>
+  <dt>データフロー</dt><dd>${esc(r.from)} → ${esc(r.to)}</dd>
+  <dt>受払年月日</dt><dd>${wa(r.lendDate)}</dd>
+  <dt>返却予定日</dt><dd>${wa(r.dueDate)}</dd>
+  ${r.returnDate?`<dt>返却日</dt><dd>${wa(r.returnDate)}</dd>`:''}
+  ${r.note?`<dt>備考</dt><dd>${esc(r.note)}</dd>`:''}
+  </dl>`;
+}
+function recCard(r,buttons){
+  return `<article class="card"><div class="rec-head"><span class="no">${no(r)}</span>${statusTag(r)}<span class="media">${esc(r.media)}</span></div>${recSummary(r)}<div class="btns">${buttons}</div></article>`;
+}
+function eligible(role){return DB.approvers.filter(a=>a.active&&(role==='admin'?a.isAdmin:a.role===role));}
+function pinBlock(role){
+  const list=eligible(role);
+  const label=role==='first'?'一次承認者（デジタル・行政経営課 担当者）':role==='final'?'最終承認者（課長）':'管理者';
+  const demo=DB.meta.demo?list.filter(a=>a.demoPin).map(a=>`${esc(a.name)}=${a.demoPin}`).join('、'):'';
+  return `<div class="pinbox"><div class="pin-title">${label}</div>
+  ${list.length?`<div class="grid2"><label>氏名<select name="approver">${list.length>1?'<option value="">選択してください</option>':''}${list.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select></label>
+  <label>PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="8"></label></div>`
+  :'<p class="err">対象の承認者が登録されていません。「設定」で登録してください。</p>'}
+  ${demo?`<p class="hint">試作版の初期PIN：${demo}</p>`:''}
+  <p class="err" data-err></p></div>`;
+}
+function setErr(m,msg){const e=m.querySelector('[data-err]');if(e)e.textContent=msg;}
+function checkPin(m,role){
+  if(Date.now()<lockUntil){setErr(m,`入力ミスが続いたため、${Math.ceil((lockUntil-Date.now())/1000)}秒お待ちください`);return null;}
+  const sel=m.querySelector('[name=approver]'),pinEl=m.querySelector('[name=pin]');
+  if(!sel){setErr(m,'承認者が登録されていません');return null;}
+  const a=DB.approvers.find(x=>x.id===sel.value);
+  if(!a){setErr(m,'氏名を選択してください');return null;}
+  if(!a.active||(role==='admin'?!a.isAdmin:a.role!==role)){setErr(m,'この操作を行う権限がありません');return null;}
+  if(hashPin(a.salt,pinEl.value)!==a.pinHash){
+    pinFail++;pinEl.value='';
+    if(pinFail>=5){lockUntil=Date.now()+60000;pinFail=0;setErr(m,'PINが5回違ったため、60秒間入力できません');}
+    else setErr(m,'PINが違います');
+    return null;
+  }
+  pinFail=0;return a;
+}
+
+/* ---------- ナビ・描画 ---------- */
+function renderNav(){
+  const R=DB.records;
+  const c={approve:R.filter(r=>r.status==='pending').length,return:R.filter(r=>r.status==='lent').length,final:R.filter(isNeedFinal).length};
+  const over=R.some(isOverdue);
+  $('#nav').innerHTML=TABS.map(([k,l])=>`<button class="${state.tab===k?'on':''}" data-act="tab" data-tab="${k}">${l}${c[k]?`<span class="cnt ${k==='return'&&over?'bad':''}">${c[k]}</span>`:''}</button>`).join('');
+}
+function render(){renderNav();$('#view').innerHTML=(VIEWS[state.tab]||vHome)();}
+function go(tab){if(tab!=='settings')state.admin=false;state.tab=tab;render();window.scrollTo(0,0);}
+
+/* ---------- ホーム ---------- */
+function vHome(){
+  const t=today(),R=DB.records;
+  const pend=R.filter(r=>r.status==='pending').length;
+  const lent=R.filter(r=>r.status==='lent');
+  const over=lent.filter(r=>r.dueDate<t).length;
+  const fin=R.filter(isNeedFinal).length;
+  const busy=busyMap();
+  const lb=DB.meta.lastBackupAt;
+  const days=lb?Math.floor((Date.now()-new Date(lb).getTime())/86400000):null;
+  const bk=!lb?'<div class="notice warn">まだバックアップを保存していません。「設定」からバックアップを保存してください。</div>'
+    :days>30?`<div class="notice warn">最後のバックアップから${days}日経っています（${fmtDT(lb)}）。</div>`:'';
+  const stat=(label,n,tab,cls)=>`<button class="stat ${cls}" data-act="tab" data-tab="${tab}"><span class="n">${n}</span><span class="l">${label}</span></button>`;
+  const tile=(m,r)=>{
+    if(!r)return `<button class="tile free" data-act="apply-media" data-id="${esc(m)}"><b>${esc(m)}</b><span class="st">空き</span><span class="sub">タップして申請</span></button>`;
+    const ov=isOverdue(r),cls=r.status==='pending'?'pend':ov?'over':'out',st=r.status==='pending'?'一次承認待ち':ov?'期限超過':'貸出中';
+    return `<button class="tile ${cls}" data-act="detail" data-id="${r.id}"><b>${esc(m)}</b><span class="st">${st}</span><span class="sub">${esc(r.dept)}・${esc(r.receiver)}</span><span class="sub">返却予定 ${wa(r.dueDate)}</span></button>`;
+  };
+  return `${storageOK?'':'<div class="notice bad">この環境ではデータを保存できません（プライベートブラウズなど）。通常モードで開いてください。</div>'}${bk}
+  <div class="stats">
+    ${stat('一次承認待ち',pend,'approve',pend?'warn':'')}
+    ${stat('貸出中',lent.length,'return','')}
+    ${stat('返却期限超過',over,'return',over?'bad':'')}
+    ${stat('課長 未承認',fin,'final',fin?'warn':'')}
+  </div>
+  <div class="row-head"><h2>媒体の状況</h2><button class="btn pri big" data-act="tab" data-tab="apply">＋ 新規申請</button></div>
+  <div class="tiles">${DB.masters.media.map(m=>tile(m,busy[m])).join('')}</div>`;
+}
+
+/* ---------- 新規申請 ---------- */
+function selectOther(name){
+  return `<select name="${name}" data-other="${name}Other"><option value="">選択してください</option>${DB.masters.systems.map(s=>`<option>${esc(s)}</option>`).join('')}<option value="__other">その他（直接入力）</option></select>
+  <input name="${name}Other" placeholder="システム名を入力" autocomplete="off" hidden>`;
+}
+function vApply(){
+  const busy=busyMap(),free=DB.masters.media.filter(m=>!busy[m]),t=today();
+  const pre=state.preMedia;state.preMedia=null;
+  return `<h2>新規申請（貸出）</h2>
+  <p class="lead">入力して「申請する」を押したら、このiPadを一次承認者（デジタル・行政経営課）に渡して承認を受けてください。</p>
+  <form id="applyForm" class="card form" novalidate onsubmit="return false">
+    <div class="err-box" id="applyErr" hidden></div>
+    <div class="grid2">
+      <label><span class="lbl">業務主管課<span class="req">必須</span></span><select name="dept"><option value="">選択してください</option>${DB.masters.depts.map(d=>`<option>${esc(d)}</option>`).join('')}</select></label>
+      <label><span class="lbl">受領者（申請者）氏名<span class="req">必須</span></span><input name="receiver" autocomplete="off"></label>
+      <label><span class="lbl">受払年月日<span class="req">必須</span></span><input type="date" name="lendDate" value="${t}"></label>
+      <label><span class="lbl">返却予定日<span class="req">必須</span></span><input type="date" name="dueDate" value="${t}"></label>
+      <label><span class="lbl">媒体<span class="req">必須</span></span>${free.length?`<select name="media"><option value="">選択してください</option>${free.map(m=>`<option ${m===pre?'selected':''}>${esc(m)}</option>`).join('')}</select>`:'<span class="notice warn">いま貸出できる媒体がありません</span>'}</label>
+      <label><span class="lbl">数量<span class="req">必須</span></span><input type="number" name="qty" value="1" min="1" max="99" inputmode="numeric"></label>
+    </div>
+    <label><span class="lbl">記録内容<span class="req">必須</span></span><input name="content" autocomplete="off" placeholder="例：国保資格データ"></label>
+    <fieldset><legend>特定個人情報の有無<span class="req">必須</span></legend>
+      <div class="seg"><label><input type="radio" name="pii" value="有">有</label><label><input type="radio" name="pii" value="無">無</label></div>
+    </fieldset>
+    <label id="piiFileRow" hidden><span class="lbl">特定個人情報ファイル名<span class="req">必須</span></span><input name="piiFile" autocomplete="off"><small>特定個人情報を含む記録媒体を外部に提供する場合は、特定個人情報ファイル名を記載してください。</small></label>
+    <div class="grid2">
+      <label><span class="lbl">データフロー：提供元（システム名）<span class="req">必須</span></span>${selectOther('from')}</label>
+      <label><span class="lbl">データフロー：提供先（システム名）<span class="req">必須</span></span>${selectOther('to')}</label>
+    </div>
+    <label>備考<input name="note" autocomplete="off"></label>
+    <div class="btns"><button type="button" class="btn pri big" data-act="submit-apply">申請する</button></div>
+  </form>`;
+}
+function submitApply(){
+  const f=$('#applyForm');if(!f)return;
+  const v=n=>{const el=f.elements[n];return el&&el.value!=null?String(el.value).trim():'';};
+  const sel=n=>v(n)==='__other'?v(n+'Other'):v(n);
+  const piiEl=f.querySelector('input[name=pii]:checked');
+  const d={dept:v('dept'),receiver:v('receiver'),lendDate:v('lendDate'),dueDate:v('dueDate'),media:v('media'),qty:parseInt(v('qty'),10),
+    content:v('content'),pii:piiEl?piiEl.value:'',piiFile:v('piiFile'),from:sel('from'),to:sel('to'),note:v('note')};
+  const e=[];
+  if(!d.dept)e.push('業務主管課を選んでください');
+  if(!d.receiver)e.push('受領者（申請者）氏名を入力してください');
+  if(!d.lendDate)e.push('受払年月日を入力してください');
+  if(!d.dueDate)e.push('返却予定日を入力してください');
+  else if(d.lendDate&&d.dueDate<d.lendDate)e.push('返却予定日が受払年月日より前になっています');
+  if(!d.media)e.push('媒体を選んでください');
+  else if(busyMap()[d.media])e.push(`${d.media} は貸出中または承認待ちです`);
+  if(!(d.qty>=1&&d.qty<=99))e.push('数量は1〜99で入力してください');
+  if(!d.content)e.push('記録内容を入力してください');
+  if(!d.pii)e.push('特定個人情報の有無を選んでください');
+  if(d.pii==='有'&&!d.piiFile)e.push('特定個人情報ファイル名を入力してください');
+  if(d.pii!=='有')d.piiFile='';
+  if(!d.from)e.push('提供元（システム名）を選ぶか入力してください');
+  if(!d.to)e.push('提供先（システム名）を選ぶか入力してください');
+  const box=$('#applyErr');
+  if(e.length){box.innerHTML=`<b>入力内容を確認してください</b><ul>${e.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;box.hidden=false;box.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  const r=newRecord(DB,d);DB.records.push(r);
+  if(!save())return;
+  go('home');
+  openApprove1(r.id,'申請を受け付けました。このiPadを一次承認者（デジタル・行政経営課）に渡して、承認を受けてください。');
+}
+
+/* ---------- 一次承認・却下・返却 ---------- */
+function vApprove(){
+  const L=DB.records.filter(r=>r.status==='pending').sort((a,b)=>a.no-b.no);
+  return `<h2>一次承認（貸出）</h2><p class="lead">デジタル・行政経営課の担当者が内容を確認し、PINで承認します。</p>
+  ${L.length?L.map(r=>recCard(r,`<button class="btn pri big" data-act="approve1" data-id="${r.id}">承認する</button><button class="btn danger-o" data-act="reject1" data-id="${r.id}">却下</button>`)).join(''):'<div class="card empty">一次承認待ちの申請はありません。</div>'}`;
+}
+function openApprove1(id,msg){
+  const r=byId(id);if(!r||r.status!=='pending')return;
+  openModal(`<h3>一次承認（貸出） <span class="muted">${no(r)}</span></h3>${msg?`<p class="notice info">${esc(msg)}</p>`:''}${recSummary(r)}${pinBlock('first')}
+  <div class="btns"><button class="btn pri big" data-act="m-ok">承認する</button><button class="btn danger-o" data-act="reject1" data-id="${r.id}">却下する</button><button class="btn" data-act="m-close">${msg?'あとで承認する':'キャンセル'}</button></div>`,{
+    ok:m=>{const a=checkPin(m,'first');if(!a)return false;if(r.status!=='pending')return true;
+      r.status='lent';r.lend1={by:a.name,at:nowISO()};log(r,'一次承認（貸出）',a.name);save();
+      toast(`${no(r)} を承認しました（${r.media} 貸出中）`);render();return true;}});
+}
+function openReject1(id){
+  const r=byId(id);if(!r||r.status!=='pending')return;
+  openModal(`<h3>申請の却下 <span class="muted">${no(r)}</span></h3>${recSummary(r)}
+  <label><span class="lbl">却下の理由<span class="req">必須</span></span><textarea name="reason" rows="2"></textarea></label>${pinBlock('first')}
+  <div class="btns"><button class="btn danger big" data-act="m-ok">却下する</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{const reason=m.querySelector('[name=reason]').value.trim();if(!reason){setErr(m,'却下の理由を入力してください');return false;}
+      const a=checkPin(m,'first');if(!a)return false;
+      r.status='rejected';r.rejectReason=reason;r.rej={by:a.name,at:nowISO()};log(r,'却下（'+reason+'）',a.name);save();
+      toast(`${no(r)} を却下しました`);render();return true;}});
+}
+function vReturn(){
+  const L=DB.records.filter(r=>r.status==='lent').sort((a,b)=>a.dueDate<b.dueDate?-1:a.dueDate>b.dueDate?1:a.no-b.no);
+  return `<h2>返却</h2><p class="lead">媒体が返却されたら、一次承認者（デジタル・行政経営課 担当者）が確認してPINを入力します。期限を過ぎたものが上に表示されます。</p>
+  ${L.length?L.map(r=>recCard(r,`<button class="btn pri big" data-act="return1" data-id="${r.id}">返却を確認する</button>`)).join(''):'<div class="card empty">貸出中の媒体はありません。</div>'}`;
+}
+function openReturn1(id){
+  const r=byId(id);if(!r||r.status!=='lent')return;
+  openModal(`<h3>返却の確認 <span class="muted">${no(r)}</span></h3>${recSummary(r)}
+  <label><span class="lbl">返却年月日<span class="req">必須</span></span><input type="date" name="rdate" value="${today()}"></label>${pinBlock('first')}
+  <div class="btns"><button class="btn pri big" data-act="m-ok">返却を確認する</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{const d=m.querySelector('[name=rdate]').value;
+      if(!d){setErr(m,'返却年月日を入力してください');return false;}
+      if(d<r.lendDate){setErr(m,'返却年月日が受払年月日より前になっています');return false;}
+      if(d>today()){setErr(m,'未来の日付は入力できません');return false;}
+      const a=checkPin(m,'first');if(!a)return false;
+      r.status='returned';r.returnDate=d;r.ret1={by:a.name,at:nowISO()};log(r,'返却確認',a.name);save();
+      toast(`${r.media} の返却を記録しました`);render();return true;}});
+}
+
+/* ---------- 詳細 ---------- */
+function approvalTable(r){
+  const cell=(x,need)=>x?`<span class="stamp">${esc(x.by)}</span> <small>${fmtDT(x.at)}</small>`:need?'<span class="unsigned">未</span>':'<span class="muted">—</span>';
+  const lentOk=r.status==='lent'||r.status==='returned';
+  return `<div class="table-wrap"><table class="tbl"><thead><tr><th></th><th>担当者（一次承認）</th><th>所属長（最終承認）</th></tr></thead><tbody>
+  <tr><th>受払時（貸出）</th><td>${cell(r.lend1,r.status==='pending')}</td><td>${cell(r.lendFinal,lentOk)}</td></tr>
+  <tr><th>返却時</th><td>${cell(r.ret1,r.status==='lent')}</td><td>${cell(r.retFinal,r.status==='returned')}</td></tr>
+  </tbody></table></div>
+  ${r.status==='rejected'?`<p class="notice bad">却下：${esc(r.rejectReason)}（${esc(r.rej?r.rej.by:'')} ${r.rej?fmtDT(r.rej.at):''}）</p>`:''}`;
+}
+function showDetail(id){
+  const r=byId(id);if(!r)return;
+  const b=[];
+  if(r.status==='pending')b.push(`<button class="btn pri" data-act="approve1" data-id="${r.id}">一次承認する</button>`,`<button class="btn danger-o" data-act="reject1" data-id="${r.id}">却下</button>`);
+  if(r.status==='lent')b.push(`<button class="btn pri" data-act="return1" data-id="${r.id}">返却を確認する</button>`);
+  openModal(`<h3>${no(r)} ${statusTag(r)}</h3>${recSummary(r)}<h4>承認</h4>${approvalTable(r)}
+  <h4>履歴</h4><ul class="hist">${r.history.map(h=>`<li><time>${fmtDT(h.at)}</time>${esc(h.action)}（${esc(h.by)}）</li>`).join('')}</ul>
+  <div class="btns">${b.join('')}<button class="btn" data-act="m-close">閉じる</button></div>`);
+}
+
+/* ---------- 台帳・CSV ---------- */
+function filtered(){
+  const {from,to,dept,status,q}=state.lf,qq=q.trim().toLowerCase();
+  return DB.records.filter(r=>{
+    if(from&&r.lendDate<from)return false;
+    if(to&&r.lendDate>to)return false;
+    if(dept&&r.dept!==dept)return false;
+    if(status){
+      if(status==='overdue'){if(!isOverdue(r))return false;}
+      else if(status==='finalPending'){if(!isNeedFinal(r))return false;}
+      else if(r.status!==status)return false;
+    }
+    if(qq){const hay=[r.dept,r.receiver,r.media,r.content,r.piiFile,r.from,r.to,r.note,no(r)].join(' ').toLowerCase();if(!hay.includes(qq))return false;}
+    return true;
+  }).sort((a,b)=>b.no-a.no);
+}
+function ledgerTable(L){
+  if(!L.length)return '<p class="empty">該当する記録はありません。</p>';
+  const s=(x,need)=>x?`<span class="stamp">${esc(x.by)}</span>`:need?'<span class="unsigned">未</span>':'';
+  return `<table class="tbl ledger"><thead>
+  <tr><th rowspan="2">No.</th><th rowspan="2">状態</th><th rowspan="2">業務主管課</th><th colspan="3">受払時</th><th rowspan="2">媒体種類</th><th rowspan="2">数量</th><th rowspan="2">記録内容</th><th rowspan="2">特定個人<br>情報</th><th colspan="2">データフロー</th><th rowspan="2">受領者</th><th colspan="4">返却時</th></tr>
+  <tr><th>年月日</th><th>担当者</th><th>所属長</th><th>提供元</th><th>提供先</th><th>予定</th><th>返却</th><th>担当者</th><th>所属長</th></tr>
+  </thead><tbody>${L.map(r=>{const lentOk=r.status==='lent'||r.status==='returned';return `<tr data-act="detail" data-id="${r.id}">
+  <td>${String(r.no).padStart(4,'0')}</td><td>${statusTag(r)}</td><td>${esc(r.dept)}</td><td>${wa(r.lendDate)}</td><td>${s(r.lend1,r.status==='pending')}</td><td>${s(r.lendFinal,lentOk)}</td>
+  <td>${esc(r.media)}</td><td>${r.qty}</td><td class="wrap">${esc(r.content)}${r.piiFile?`<br><small>${esc(r.piiFile)}</small>`:''}</td><td>${r.pii==='有'?'<span class="tag pii">有</span>':'無'}</td>
+  <td>${esc(r.from)}</td><td>${esc(r.to)}</td><td>${esc(r.receiver)}</td><td>${wa(r.dueDate)}</td><td>${wa(r.returnDate)}</td><td>${s(r.ret1,r.status==='lent')}</td><td>${s(r.retFinal,r.status==='returned')}</td></tr>`;}).join('')}</tbody></table>`;
+}
+function vLedger(){
+  const lf=state.lf,L=filtered();
+  const depts=[...new Set(DB.masters.depts.concat(DB.records.map(r=>r.dept)))];
+  const so=(v,l)=>`<option value="${v}" ${lf.status===v?'selected':''}>${l}</option>`;
+  return `<h2>台帳・CSV出力</h2>
+  <div class="card"><form id="ledgerFilter" class="filters" onsubmit="return false">
+    <label>受払年月日（から）<input type="date" name="from" value="${lf.from}"></label>
+    <label>受払年月日（まで）<input type="date" name="to" value="${lf.to}"></label>
+    <label>業務主管課<select name="dept"><option value="">すべて</option>${depts.map(d=>`<option ${lf.dept===d?'selected':''}>${esc(d)}</option>`).join('')}</select></label>
+    <label>状態<select name="status">${so('','すべて')}${so('pending','一次承認待ち')}${so('lent','貸出中')}${so('overdue','返却期限超過')}${so('returned','返却済')}${so('rejected','却下')}${so('finalPending','課長 未承認')}</select></label>
+    <label>キーワード<input name="q" value="${esc(lf.q)}" placeholder="記録内容・受領者など" autocomplete="off"></label>
+  </form>
+  <div class="ledger-actions"><span>表示中：<span id="ledgerCount">${L.length}件</span></span>
+    <div class="btns" style="margin:0"><button class="btn" data-act="clear-filter">条件をクリア</button><button class="btn pri" data-act="csv">表示中の記録をCSVでダウンロード</button></div></div></div>
+  <div class="card"><div class="table-wrap" id="ledgerTable">${ledgerTable(L)}</div></div>`;
+}
+function readFilter(){const f=$('#ledgerFilter');if(!f)return;['from','to','dept','status','q'].forEach(k=>state.lf[k]=f.elements[k].value);}
+function refreshLedger(){const L=filtered();$('#ledgerTable').innerHTML=ledgerTable(L);$('#ledgerCount').textContent=L.length+'件';}
+
+const CSV_COLS=[
+  ['No',r=>r.no],['状態',r=>statusText(r)],['業務主管課',r=>r.dept],['受領者',r=>r.receiver],['受払年月日',r=>r.lendDate],
+  ['媒体種類',r=>r.media],['数量',r=>r.qty],['記録内容',r=>r.content],['特定個人情報の有無',r=>r.pii],['特定個人情報ファイル名',r=>r.piiFile],
+  ['提供元',r=>r.from],['提供先',r=>r.to],['返却予定日',r=>r.dueDate],['返却日',r=>r.returnDate],['期限',r=>lateText(r)],
+  ['受払時_担当者',r=>r.lend1&&r.lend1.by],['受払時_担当者承認日時',r=>csvDT(r.lend1&&r.lend1.at)],
+  ['受払時_所属長',r=>r.lendFinal&&r.lendFinal.by],['受払時_所属長承認日時',r=>csvDT(r.lendFinal&&r.lendFinal.at)],
+  ['返却時_担当者',r=>r.ret1&&r.ret1.by],['返却時_担当者確認日時',r=>csvDT(r.ret1&&r.ret1.at)],
+  ['返却時_所属長',r=>r.retFinal&&r.retFinal.by],['返却時_所属長承認日時',r=>csvDT(r.retFinal&&r.retFinal.at)],
+  ['却下理由',r=>r.rejectReason],['備考',r=>r.note],['申請日時',r=>csvDT(r.createdAt)]];
+function csvCell(v){let s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function download(name,content,type){
+  const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
+function exportCSV(list){
+  if(!list.length){toast('出力する記録がありません');return;}
+  const rows=list.slice().sort((a,b)=>a.no-b.no);
+  const text='﻿'+[CSV_COLS.map(c=>csvCell(c[0])).join(',')].concat(rows.map(r=>CSV_COLS.map(c=>csvCell(c[1](r))).join(','))).join('\r\n');
+  download(`USB貸出台帳_${stamp8()}.csv`,text,'text/csv;charset=utf-8');
+  toast(`${rows.length}件をCSVで出力しました`);
+}
+
+/* ---------- 課長承認 ---------- */
+function vFinal(){
+  const L=DB.records.filter(isNeedFinal).sort((a,b)=>a.no-b.no);
+  if(!L.length)return '<h2>課長承認（事後チェック）</h2><div class="card empty">最終承認が必要な記録はありません。</div>';
+  return `<h2>課長承認（事後チェック）</h2>
+  <p class="lead">一次承認済みの記録を確認し、まとめて最終承認できます。貸出中のものは「貸出」分、返却済のものは「返却」分も承認されます。No.を押すと詳細を確認できます。</p>
+  <div class="card"><div class="final-bar"><label class="chk"><input type="checkbox" id="finalAll">すべて選択</label>
+  <button class="btn pri big" data-act="final-approve" id="finalBtn" disabled>選択した0件を最終承認</button></div>
+  <div class="table-wrap"><table class="tbl"><thead><tr><th>選択</th><th>No.</th><th>状態</th><th>承認対象</th><th>業務主管課</th><th>受払年月日</th><th>媒体</th><th>記録内容</th><th>特定個人情報</th><th>提供元→提供先</th><th>受領者</th><th>返却日</th><th>担当者</th></tr></thead><tbody>
+  ${L.map(r=>`<tr><td class="center"><input type="checkbox" data-final-id="${r.id}" aria-label="${no(r)}を選択"></td><td><button class="btn small" data-act="detail" data-id="${r.id}">${String(r.no).padStart(4,'0')}</button></td>
+  <td>${statusTag(r)}</td><td class="nowrap">${finalTargets(r).join('・')}</td><td>${esc(r.dept)}</td><td class="nowrap">${wa(r.lendDate)}</td><td>${esc(r.media)}</td><td>${esc(r.content)}</td><td>${r.pii==='有'?'<span class="tag pii">有</span>':'無'}</td>
+  <td class="nowrap">${esc(r.from)} → ${esc(r.to)}</td><td>${esc(r.receiver)}</td><td class="nowrap">${wa(r.returnDate)}</td><td class="nowrap">${r.lend1?`<span class="stamp">${esc(r.lend1.by)}</span>`:''} ${r.ret1?`<span class="stamp">${esc(r.ret1.by)}</span>`:''}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+function updateFinalBtn(){
+  const n=document.querySelectorAll('[data-final-id]:checked').length,b=$('#finalBtn');
+  if(b){b.disabled=!n;b.textContent=`選択した${n}件を最終承認`;}
+  const all=$('#finalAll'),total=document.querySelectorAll('[data-final-id]').length;
+  if(all)all.checked=n>0&&n===total;
+}
+function openFinal(){
+  const recs=[...document.querySelectorAll('[data-final-id]:checked')].map(x=>byId(x.dataset.finalId)).filter(Boolean);
+  if(!recs.length)return;
+  openModal(`<h3>最終承認（課長）</h3><p>${recs.length}件を最終承認します。</p>
+  <ul class="mini">${recs.map(r=>`<li>${no(r)} ${esc(r.dept)} ${esc(r.media)} ${esc(r.content)}（${finalTargets(r).join('・')}）</li>`).join('')}</ul>${pinBlock('final')}
+  <div class="btns"><button class="btn pri big" data-act="m-ok">最終承認する</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{const a=checkPin(m,'final');if(!a)return false;const at=nowISO();let n=0;
+      recs.forEach(r=>{
+        if((r.status==='lent'||r.status==='returned')&&!r.lendFinal){r.lendFinal={by:a.name,at};log(r,'最終承認（貸出）',a.name);n++;}
+        if(r.status==='returned'&&!r.retFinal){r.retFinal={by:a.name,at};log(r,'最終承認（返却）',a.name);}
+      });
+      save();toast(`${recs.length}件を最終承認しました`);render();return true;}});
+}
+
+/* ---------- 設定 ---------- */
+function vSettings(){
+  if(!state.admin)return `<h2>設定</h2><div class="card center"><p>承認者や選択肢の変更、バックアップには管理者のPINが必要です。</p><button class="btn pri big" data-act="unlock">管理者PINで開く</button></div>`;
+  const lb=DB.meta.lastBackupAt;
+  return `<div class="row-head"><h2>設定</h2><button class="btn" data-act="lock">設定を閉じる</button></div>
+  ${DB.meta.demo?`<div class="notice info">試作版の初期データ（サンプルの記録・初期PIN）が入っています。本番で使う前に、承認者を登録し直すかPINを変更し、「台帳データを全削除」でサンプルの記録を消してください。<br><button class="btn small" data-act="hide-demo">初期PINの表示を消す</button></div>`:''}
+  <section class="card"><h3>承認者</h3><p class="lead">一次承認者はデジタル・行政経営課の担当者、最終承認者は課長のみを登録してください。「管理者」はこの設定画面を開けます。</p>
+  <div class="table-wrap"><table class="tbl"><thead><tr><th>氏名</th><th>区分</th><th>管理者</th><th>状態</th><th>操作</th></tr></thead><tbody>
+  ${DB.approvers.map(a=>`<tr class="${a.active?'':'dim'}"><td>${esc(a.name)}</td><td>${ROLE[a.role]}</td><td class="center">${a.isAdmin?'○':''}</td><td>${a.active?'有効':'無効'}</td>
+  <td class="nowrap"><button class="btn small" data-act="ap-pin" data-id="${a.id}">PIN変更</button><button class="btn small" data-act="ap-admin" data-id="${a.id}">${a.isAdmin?'管理者を外す':'管理者にする'}</button><button class="btn small" data-act="ap-toggle" data-id="${a.id}">${a.active?'無効にする':'有効にする'}</button></td></tr>`).join('')}
+  </tbody></table></div>
+  <h4>承認者を追加</h4>
+  <form id="apForm" class="form" onsubmit="return false"><div class="grid2">
+    <label>氏名<input name="name" autocomplete="off"></label>
+    <label>区分<select name="role"><option value="first">${ROLE.first}</option><option value="final">${ROLE.final}</option></select></label>
+    <label>PIN（数字4〜8桁）<input name="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label>
+    <label>PIN（確認）<input name="pin2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label></div>
+    <label class="chk"><input type="checkbox" name="isAdmin">管理者にする</label>
+    <p class="err" id="apErr"></p>
+    <div class="btns"><button type="button" class="btn pri" data-act="ap-add">追加する</button></div></form></section>
+
+  <section class="card"><h3>選択肢</h3><p class="lead">1行に1つずつ入力して「保存する」を押します。</p>
+  <div class="grid3 form">
+    <label>媒体<textarea id="mMedia" rows="10">${esc(DB.masters.media.join('\n'))}</textarea></label>
+    <label>業務主管課<textarea id="mDepts" rows="10">${esc(DB.masters.depts.join('\n'))}</textarea></label>
+    <label>システム名（提供元・提供先）<textarea id="mSystems" rows="10">${esc(DB.masters.systems.join('\n'))}</textarea></label></div>
+  <p class="err" id="mErr"></p><div class="btns" style="margin-top:0"><button class="btn pri" data-act="save-masters">保存する</button></div></section>
+
+  <section class="card"><h3>バックアップ</h3>
+  <p>データは<b>このiPadの中にだけ</b>保存されています。故障・紛失・初期化に備えて、<b>月1回以上</b>バックアップを保存し、安全な場所に保管してください。</p>
+  <p>最終バックアップ：<b>${lb?fmtDT(lb):'未実施'}</b></p>
+  <div class="btns"><button class="btn pri" data-act="backup">バックアップを保存</button>
+  <label class="btn">バックアップから復元<input type="file" id="restoreFile" accept=".json,application/json" hidden></label>
+  <button class="btn" data-act="csv-all">台帳の全件をCSVで出力</button></div></section>
+
+  <section class="card danger-zone"><h3>データの削除</h3><p>台帳の記録をすべて削除します（承認者と選択肢は残ります）。削除する前にバックアップを保存してください。</p>
+  <button class="btn danger" data-act="clear-records">台帳データを全削除</button></section>`;
+}
+function openUnlock(){
+  openModal(`<h3>設定を開く</h3>${pinBlock('admin')}<div class="btns"><button class="btn pri big" data-act="m-ok">開く</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{const a=checkPin(m,'admin');if(!a)return false;state.admin=true;render();return true;}});
+}
+function addApprover(){
+  const f=$('#apForm'),err=$('#apErr');
+  const name=f.elements.name.value.trim(),role=f.elements.role.value,pin=f.elements.pin.value,pin2=f.elements.pin2.value,isAdmin=f.elements.isAdmin.checked;
+  if(!name){err.textContent='氏名を入力してください';return;}
+  if(DB.approvers.some(a=>a.active&&a.name===name)){err.textContent='同じ氏名の承認者がすでに登録されています';return;}
+  if(!/^\d{4,8}$/.test(pin)){err.textContent='PINは数字4〜8桁で入力してください';return;}
+  if(pin!==pin2){err.textContent='PINと確認用のPINが一致しません';return;}
+  DB.approvers.push(makeApprover(name,role,isAdmin,pin,false));save();toast(`${name} を追加しました`);render();
+}
+function openPinChange(id){
+  const a=DB.approvers.find(x=>x.id===id);if(!a)return;
+  openModal(`<h3>PIN変更：${esc(a.name)}</h3><label>新しいPIN（数字4〜8桁）<input name="p1" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label>
+  <label>新しいPIN（確認）<input name="p2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8"></label><p class="err" data-err></p>
+  <div class="btns"><button class="btn pri big" data-act="m-ok">変更する</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{const p1=m.querySelector('[name=p1]').value,p2=m.querySelector('[name=p2]').value;
+      if(!/^\d{4,8}$/.test(p1)){setErr(m,'PINは数字4〜8桁で入力してください');return false;}
+      if(p1!==p2){setErr(m,'確認用のPINが一致しません');return false;}
+      a.salt=uid();a.pinHash=hashPin(a.salt,p1);delete a.demoPin;save();toast(`${a.name} のPINを変更しました`);render();return true;}});
+}
+function toggleApprover(id,key){
+  const a=DB.approvers.find(x=>x.id===id);if(!a)return;
+  const nv=!a[key];
+  const after=DB.approvers.map(x=>x.id===id?Object.assign({},x,{[key]:nv}):x);
+  if(!after.some(x=>x.active&&x.isAdmin)){toast('有効な管理者が1人以上必要です');return;}
+  a[key]=nv;save();render();
+  if(!eligible('first').length)toast('有効な一次承認者がいません');
+  else if(!eligible('final').length)toast('有効な最終承認者（課長）がいません');
+}
+function saveMasters(){
+  const lines=id=>[...new Set($('#'+id).value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean))];
+  const media=lines('mMedia'),depts=lines('mDepts'),systems=lines('mSystems'),err=$('#mErr');
+  if(!media.length||!depts.length||!systems.length){err.textContent='それぞれ1つ以上入力してください';return;}
+  const busy=Object.keys(busyMap()).filter(m=>!media.includes(m));
+  if(busy.length){err.textContent=`${busy.join('、')} は貸出中または承認待ちのため削除できません`;return;}
+  DB.masters={media,depts,systems};save();toast('選択肢を保存しました');render();
+}
+function doBackup(){
+  DB.meta.lastBackupAt=nowISO();save();
+  download(`USB貸出台帳_バックアップ_${stamp8()}.json`,JSON.stringify({app:'usb-lending-ledger',exportedAt:nowISO(),data:DB}),'application/json');
+  toast('バックアップを保存しました。ファイルを安全な場所に保管してください');render();
+}
+function restoreFrom(file){
+  if(!file)return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let obj;try{obj=JSON.parse(fr.result);}catch(e){toast('ファイルを読み込めませんでした');return;}
+    const d=obj&&obj.data?obj.data:obj;
+    if(!d||!Array.isArray(d.records)||!Array.isArray(d.approvers)||!d.masters){toast('バックアップファイルの形式が正しくありません');return;}
+    openModal(`<h3>バックアップから復元</h3><p>記録 ${d.records.length}件、承認者 ${d.approvers.length}人のデータで、<b>いまのデータをすべて置き換えます</b>。よろしいですか？</p>
+    <div class="btns"><button class="btn danger big" data-act="m-ok">置き換える</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+      ok:()=>{DB=d;DB.meta=DB.meta||{};DB.seq=Math.max(DB.seq||0,...DB.records.map(r=>r.no||0),0);save();toast('復元しました');render();return true;}});
+  };
+  fr.readAsText(file);
+}
+function openClearRecords(){
+  openModal(`<h3>台帳データを全削除</h3><p>台帳の記録 ${DB.records.length}件をすべて削除します。<b>元に戻せません。</b>実行する場合は「削除」と入力してください。</p>
+  <label>確認<input name="confirm" autocomplete="off"></label><p class="err" data-err></p>
+  <div class="btns"><button class="btn danger big" data-act="m-ok">削除する</button><button class="btn" data-act="m-close">キャンセル</button></div>`,{
+    ok:m=>{if(m.querySelector('[name=confirm]').value.trim()!=='削除'){setErr(m,'「削除」と入力してください');return false;}
+      DB.records=[];DB.seq=0;save();toast('台帳データを削除しました');render();return true;}});
+}
+
+/* ---------- イベント ---------- */
+const VIEWS={home:vHome,apply:vApply,approve:vApprove,return:vReturn,ledger:vLedger,final:vFinal,settings:vSettings};
+const ACT={
+  tab:t=>go(t.dataset.tab),
+  'apply-media':t=>{state.preMedia=t.dataset.id;go('apply');},
+  'submit-apply':()=>submitApply(),
+  approve1:t=>openApprove1(t.dataset.id),
+  reject1:t=>openReject1(t.dataset.id),
+  return1:t=>openReturn1(t.dataset.id),
+  detail:t=>showDetail(t.dataset.id),
+  csv:()=>exportCSV(filtered()),
+  'csv-all':()=>exportCSV(DB.records),
+  'clear-filter':()=>{state.lf={from:'',to:'',dept:'',status:'',q:''};render();},
+  'final-approve':()=>openFinal(),
+  unlock:()=>openUnlock(),
+  lock:()=>{state.admin=false;render();},
+  'ap-add':()=>addApprover(),
+  'ap-pin':t=>openPinChange(t.dataset.id),
+  'ap-toggle':t=>toggleApprover(t.dataset.id,'active'),
+  'ap-admin':t=>toggleApprover(t.dataset.id,'isAdmin'),
+  'save-masters':()=>saveMasters(),
+  backup:()=>doBackup(),
+  'clear-records':()=>openClearRecords(),
+  'hide-demo':()=>{DB.meta.demo=false;DB.approvers.forEach(a=>delete a.demoPin);save();render();},
+  'm-ok':()=>{const m=$('#modal-root .modal');if(!m)return;if(!modalCtx||!modalCtx.ok){closeModal();return;}if(modalCtx.ok(m)===true)closeModal();},
+  'm-close':()=>closeModal()
+};
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const fn=ACT[t.dataset.act];if(!fn)return;
+  e.preventDefault();fn(t,e);
+});
+function onFieldChange(e){
+  const t=e.target;
+  if(t.matches('select[data-other]')&&t.form){const o=t.form.elements[t.dataset.other];o.hidden=t.value!=='__other';if(!o.hidden&&e.type==='change')o.focus();}
+  if(t.name==='pii'&&t.form&&t.form.id==='applyForm'){
+    $('#piiFileRow').hidden=t.value!=='有';
+    t.form.querySelectorAll('.seg label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));
+  }
+  if(t.closest('#ledgerFilter')){readFilter();refreshLedger();}
+  if(t.matches('[data-final-id]'))updateFinalBtn();
+  if(t.id==='finalAll'){document.querySelectorAll('[data-final-id]').forEach(c=>c.checked=t.checked);updateFinalBtn();}
+}
+document.addEventListener('change',e=>{
+  if(e.target.id==='restoreFile'){const f=e.target.files[0];e.target.value='';restoreFrom(f);return;}
+  onFieldChange(e);
+});
+document.addEventListener('input',e=>{if(e.target.closest('#ledgerFilter'))onFieldChange(e);});
+document.addEventListener('keydown',e=>{
+  if(!modalCtx&&!$('#modal-root .modal'))return;
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.closest('.modal')){e.preventDefault();ACT['m-ok']();}
+});
+
+/* ---------- 起動 ---------- */
+(function init(){
+  let fresh=false;try{fresh=!localStorage.getItem(STORE_KEY);}catch(e){}
+  if(fresh&&storageOK)save();
+  $('#today').textContent='今日 '+wa(today());
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});}catch(e){}
+  render();
+})();
+</script>
+</body>
+</html>
